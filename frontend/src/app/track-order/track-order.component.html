@@ -7,7 +7,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label translate>LABEL_ORDER_ID</mat-label>
-        <input id="orderId" [formControl]="orderIdControl" type="text" matInput placeholder="xxxx-0123456789abcdef">
+        <input id="orderId" [formControl]="orderIdControl" type="text" [pattern]="'([A-Za-z0-9\-\]+)'" matInput placeholder="xxxx-0123456789abcdef">
         <mat-error *ngIf="orderIdControl.invalid" translate>MANDATORY_ORDER_ID</mat-error>
       </mat-form-field>
 
