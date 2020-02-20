@@ -439,6 +439,7 @@ for (const { name, exclude } of autoModels) {
 }
 
 /* Custom Restful API */
+app.post('/rest/user/login', captcha.verifyCaptcha())
 app.post('/rest/user/login', login())
 app.get('/rest/user/change-password', changePassword())
 app.post('/rest/user/reset-password', resetPassword())

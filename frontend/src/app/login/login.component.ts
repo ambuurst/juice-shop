@@ -1,3 +1,4 @@
+import { CaptchaService } from '../Services/captcha.service'
 import { CookieService } from 'ngx-cookie'
 import { WindowRefService } from '../Services/window-ref.service'
 import { Router } from '@angular/router'
@@ -40,14 +41,17 @@ const authorizedRedirectURIs: any = {
 export class LoginComponent implements OnInit {
 
   public emailControl = new FormControl('', [Validators.required])
+  public captchaControl: FormControl = new FormControl('', [Validators.required, Validators.pattern('-?[\\d]*')])
   public passwordControl = new FormControl('', [Validators.required])
   public hide = true
   public user: any
+  public captcha: any
+  public captchaId: any
   public rememberMe: FormControl = new FormControl(false)
   public error: any
   public oauthUnavailable: boolean = true
   public redirectUri: string = ''
-  constructor (private userService: UserService, private windowRefService: WindowRefService, private cookieService: CookieService, private router: Router, private formSubmitService: FormSubmitService) { }
+  constructor (private userService: UserService, private captchaService: CaptchaService, private windowRefService: WindowRefService, private cookieService: CookieService, private router: Router, private formSubmitService: FormSubmitService) { }
 
   ngOnInit () {
     const email = localStorage.getItem('email')
@@ -64,12 +68,22 @@ export class LoginComponent implements OnInit {
     if (this.oauthUnavailable) {
       console.log(this.redirectUri + ' is not an authorized redirect URI for this application.')
     }
+    this.getNewCaptcha()
 
     this.formSubmitService.attachEnterKeyHandler('login-form', 'loginButton', () => this.login())
   }
 
+  getNewCaptcha () {
+    this.captchaService.getCaptcha().subscribe((data: any) => {
+      this.captcha = data.captcha
+      this.captchaId = data.captchaId
+    }, (err) => err)
+  }
+
   login () {
     this.user = {}
+    this.user.captchaId = this.captchaId
+    this.user.captcha = this.captchaControl.value
     this.user.email = this.emailControl.value
     this.user.password = this.passwordControl.value
     this.userService.login(this.user).subscribe((authentication: any) => {
@@ -78,6 +92,8 @@ export class LoginComponent implements OnInit {
       sessionStorage.setItem('bid', authentication.bid)
       this.userService.isLoggedIn.next(true)
       this.router.navigate(['/search'])
+      this.resetCaptcha()
+      console.log(this.user)
     }, ({ error }) => {
       if (error.status && error.data && error.status === 'totp_token_requried') {
         localStorage.setItem('totp_tmp_token', error.data.tmpToken)
@@ -91,6 +107,7 @@ export class LoginComponent implements OnInit {
       this.userService.isLoggedIn.next(false)
       this.emailControl.markAsPristine()
       this.passwordControl.markAsPristine()
+      this.resetCaptcha()
     })
 
     if (this.rememberMe.value) {
@@ -108,6 +125,12 @@ export class LoginComponent implements OnInit {
     this.windowRefService.nativeWindow.location.replace(oauthProviderUrl + '?client_id='
       + clientId + '&response_type=token&scope=email&redirect_uri='
       + authorizedRedirectURIs[this.redirectUri])
+  }
+
+  resetCaptcha () {
+    this.captchaControl.markAsUntouched()
+    this.captchaControl.markAsPristine()
+    this.captchaControl.setValue('')
   }
 
 }
